@@ -1,0 +1,85 @@
+<div class="list-applications" *ngIf="vm$ | async as vm">
+  <ng-container *ngIf="appsEntities$ | async as appsEntities">
+    <ngx-datatable
+      *ngIf="activeWorkspaceApps?.length > 0"
+      #listApplications
+      class="expandable"
+      [rows]="activeWorkspaceApps"
+      [headerHeight]="40"
+      [rowHeight]="'auto'"
+      [scrollbarV]="false"
+      [scrollbarH]="true"
+      [columnMode]="ColumnMode.force"
+      [sorts]="[{ prop: 'name', dir: 'asc' }]"
+      [cssClasses]="{
+        sortAscending: 'ngx-icon ngx-arrow-up',
+        sortDescending: 'ngx-icon ngx-arrow-down'
+      }"
+    >
+      <!-- Row Detail Template -->
+      <ngx-datatable-row-detail [rowHeight]="'auto'">
+        <ng-template let-row="row" let-expanded="expanded" ngx-datatable-row-detail-template>
+          <section class="row-detail">
+            <app-application-summary [app]="row" [appsEntities]="appsEntities"></app-application-summary>
+          </section>
+        </ng-template>
+      </ngx-datatable-row-detail>
+
+      <ngx-datatable-column
+        [width]="50"
+        [resizeable]="false"
+        [sortable]="false"
+        [draggable]="false"
+        [canAutoResize]="false"
+      >
+        <ng-template let-row="row" let-expanded="expanded" ngx-datatable-cell-template>
+          <a href="javascript:void(0)" title="Expand/Collapse Row" (click)="toggleExpandRow(row)">
+            <i class="ngx-icon" [class.ngx-arrow-down]="expanded" [class.ngx-arrow-right]="!expanded"></i>
+          </a>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <ngx-datatable-column name="Name">
+        <ng-template let-row="row" ngx-datatable-cell-template> {{ row.name }} </ng-template>
+      </ngx-datatable-column>
+
+      <ngx-datatable-column name="Acronym">
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          {{ row.acronym }}
+        </ng-template>
+      </ngx-datatable-column>
+
+      <ngx-datatable-column name="Fields & Layouts" [sortable]="false">
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <small
+            >FIELDS: <b>{{ row.fields?.length }}</b></small
+          >
+          <span class="dot"></span>
+          <small
+            >LAYOUTS: <b>{{ vm.appLayoutsFlattenedByAppId[row.id]?.length }}</b></small
+          >
+        </ng-template>
+      </ngx-datatable-column>
+
+      <ngx-datatable-column name="Reports" [sortable]="false">
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          {{ appsEntities[row.id].reports?.length }}
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <p *ngIf="activeWorkspaceApps.length === 0" class="padded-text">No apps</p>
+  </ng-container>
+</div>
+
+<ng-template #tmplReportSummary let-context="context">
+  <app-report-summary [context]="context"></app-report-summary>
+</ng-template>
+
+<ng-template #tmplTaskSummary let-context="context">
+  <app-task-summary [context]="context"></app-task-summary>
+</ng-template>
+
+<ng-template #tmplLayoutSummary let-context="context">
+  <app-layout-summary [context]="context"></app-layout-summary>
+</ng-template>

@@ -1,0 +1,33 @@
+@import '@swimlane/ngx-ui/lib/styles/colors';
+
+.list-dashboards {
+  datatable-scroller.datatable-scroll {
+    width: 100% !important;
+  }
+
+  .row-detail {
+    padding: 5px 20px 10px 20px;
+    background-color: $color-blue-grey-900;
+
+    .scrollable {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    &__content {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      justify-content: space-between;
+
+      &__reports,
+      &__htmls,
+      &__statistics {
+        flex: 1;
+        ul {
+          @extend .scrollable;
+        }
+      }
+    }
+  }
+}

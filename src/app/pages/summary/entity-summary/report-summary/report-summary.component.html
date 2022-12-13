@@ -1,0 +1,95 @@
+<div class="report-summary">
+  <ngx-toolbar [mainTitle]="context.title" [subtitle]="context.item?.description">
+    <ngx-toolbar-content>
+      <span class="tag layout-type">Report</span>
+      <ngx-button class="btn btn-link dialog-close" (click)="context.close()">
+        <ngx-icon fontIcon="x"></ngx-icon>
+      </ngx-button>
+    </ngx-toolbar-content>
+  </ngx-toolbar>
+
+  <section class="drawer-content">
+    <div class="drawer-content__report">
+      <div class="drawer-content__report__filter" *ngIf="context.item.filters?.length > 0">
+        <h1>Filters ({{ context.item.filters?.length }}):</h1>
+        <ul>
+          <li *ngFor="let filter of context.item.filters">
+            <ng-container *ngIf="context.fieldsMap[filter.fieldId] as activeField">
+              <div class="drawer-content__report__filter__item">
+                <b>{{ activeField.name }}</b> <span class="tag">{{ filter.filterType }}</span>
+                <ng-container [ngSwitch]="activeField.fieldType">
+                  <ng-container *ngSwitchCase="'ValuesList'">
+                    <span>{{ getFilterNameFromValues(activeField, filter.value) }}</span>
+                  </ng-container>
+                  <ng-container *ngSwitchCase="'UserGroup'">
+                    <span>{{ filter.value?.name }}</span>
+                  </ng-container>
+                  <ng-container *ngSwitchDefault>
+                    <span>{{ filter.value }}</span>
+                  </ng-container>
+                </ng-container>
+              </div>
+            </ng-container>
+          </li>
+        </ul>
+      </div>
+
+      <div class="drawer-content__report__groupBy" *ngIf="context.item.groupBys?.length > 0">
+        <h1>Group by ({{ context.item.groupBys.length }}):</h1>
+        <ul>
+          <li *ngFor="let groupByItem of context.item.groupBys">
+            <div class="drawer-content__report__filter__item">
+              <span class="tag">{{ groupByItem.groupByType }}</span>
+              <span *ngIf="context.fieldsMap[groupByItem.fieldId] as groupByItemField">{{
+                groupByItemField.name
+              }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="drawer-content__report__aggregates" *ngIf="context.item.aggregates?.length > 0">
+        <h1>Aggregates ({{ context.item.aggregates.length }}):</h1>
+        <ul>
+          <li *ngFor="let aggregateItem of context.item.aggregates">
+            <div class="drawer-content__report__filter__item">
+              <span class="tag">{{ aggregateItem.aggregateType }}</span>
+              <span *ngIf="context.fieldsMap[aggregateItem.fieldId] as aggregateItemField">{{
+                aggregateItemField.name
+              }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="drawer-content__report__columns" *ngIf="context.item.columns?.length > 0">
+        <h1>Columns ({{ context.item.columns.length }}):</h1>
+        <ul>
+          <li *ngFor="let column of context.item.columns">
+            <div class="drawer-content__report__filter__item" *ngIf="context.fieldsMap[column] as columnField">
+              <span>{{ columnField.name }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="drawer-content__report__applications" *ngIf="context.reportApps?.length > 0">
+        <h1>Applications ({{ context.reportApps.length }}):</h1>
+        <ul>
+          <li *ngFor="let reportApp of context.reportApps">
+            {{ reportApp.name }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="drawer-content__report__dashboards" *ngIf="context.reportDashboards?.length > 0">
+        <h1>Report is referenced in dashboards ({{ context.reportDashboards.length }}):</h1>
+        <ul>
+          <li *ngFor="let reportDashboard of context.reportDashboards">
+            {{ reportDashboard.name }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

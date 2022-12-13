@@ -1,0 +1,57 @@
+@import '@swimlane/ngx-ui/lib/styles/colors';
+
+.application-summary {
+  padding: 1rem 2rem;
+
+  .scrollable {
+    thead {
+      th {
+        padding: 0.25rem;
+      }
+    }
+    overflow-y: auto;
+  }
+
+  &__content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    &__fields {
+      &__container {
+        flex: 1;
+        table.table {
+          @extend .scrollable;
+        }
+      }
+    }
+
+    &__layouts {
+      &__container {
+        flex: 1;
+        table.table {
+          @extend .scrollable;
+        }
+      }
+    }
+
+    &__workflow {
+      &__container {
+        flex: 1;
+        ul {
+          @extend .scrollable;
+        }
+      }
+    }
+
+    &__reports {
+      &__container {
+        flex: 1;
+        ul {
+          @extend .scrollable;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,260 @@
+<div class="entity-summary" *ngIf="entitiesMap$ | async as entitiesMap">
+  <ngx-toolbar [mainTitle]="context.title">
+    <ngx-toolbar-content>
+      <span class="tag layout-type" *ngIf="context.item?.layoutType">{{ context.item.layoutType | titlecase }}</span>
+      <ngx-button class="btn btn-link dialog-close" (click)="context.close()">
+        <ngx-icon fontIcon="x"></ngx-icon>
+      </ngx-button>
+    </ngx-toolbar-content>
+  </ngx-toolbar>
+
+  <section class="drawer-content">
+    <div class="drawer-content__task" *ngIf="context.task as task">
+      <div class="drawer-content__task__general">
+        <ul>
+          <li>
+            <h3>Name:</h3>
+            <p>{{ task.name }}</p>
+          </li>
+          <li>
+            <h3>Task Type:</h3>
+            <p>{{ task?.action?.descriptor?.family }}: {{ task?.action?.descriptor?.name }}</p>
+            <i *ngIf="task?.action?.forkedFromPackage"
+              >Forked from the <strong>{{ task?.action?.forkedFromPackage }}</strong> package</i
+            >
+          </li>
+        </ul>
+
+        <ul>
+          <li>
+            <h3>Task Parent:</h3>
+            <p>{{ entitiesMap.appsMap[task.applicationId]?.name || 'None (Common Task)' }}</p>
+          </li>
+          <li>
+            <h3>Disabled:</h3>
+            <p>{{ task.disabled }}</p>
+          </li>
+        </ul>
+
+        <ul>
+          <li>
+            <h3>Description:</h3>
+            <p>{{ task.description || '-' }}</p>
+          </li>
+
+          <li *ngIf="task?.action?.descriptor?.assetDependencyType || task?.action?.assetDependencyType">
+            <h3>Asset:</h3>
+            <p>{{ entitiesMap.assetsMap[task.action.assetId]?.name }}</p>
+          </li>
+        </ul>
+      </div>
+
+      <ng-container *ngIf="context.supportsScript">
+        <ngx-section
+          [sectionTitle]="'Script'"
+          appearance="outline"
+          class="no-content-padding"
+          [sectionCollapsed]="defaultCollapseState"
+        >
+          <ng-container *ngTemplateOutlet="tmplScript"></ng-container>
+        </ngx-section>
+      </ng-container>
+
+      <ng-container *ngIf="task.inputMapping?.length > 0">
+        <ngx-section
+          [sectionTitle]="'Inputs (' + task.inputMapping.length + ')'"
+          appearance="outline"
+          class="no-content-padding"
+          [sectionCollapsed]="defaultCollapseState"
+        >
+          <div class="drawer-content__task__inputs">
+            <div class="drawer-content__task__inputs__items" *ngFor="let input of task.inputMapping">
+              <ul class="horizontal-list drawer-content__task__inputs__items__item">
+                <li>
+                  <h3>Variable:</h3>
+                  <p>{{ input.key }}</p>
+                </li>
+                <li>
+                  <h3>Type:</h3>
+                  <p>{{ INPUT_PARAM_TYPES[input.type] || input.type }}</p>
+                </li>
+                <li>
+                  <h3>Value:</h3>
+                  <span>
+                    <ng-container [ngSwitch]="input.type">
+                      <ng-container *ngSwitchCase="'asset'">
+                        <p>Asset: {{ entitiesMap.assetsMap[input.value]?.name }}</p>
+                        <p>Parameter: {{ input.subValue }}</p>
+                      </ng-container>
+
+                      <ng-container *ngSwitchCase="'record'">
+                        <p>Field: {{ (selectField(input.value) | async)?.name }}</p>
+                      </ng-container>
+
+                      <ng-container *ngSwitchCase="'link'">
+                        <p>Link Type: {{ LINK_TYPES[input.value] || input.value }}</p>
+                        <p>
+                          {{ input.value === 'report' ? 'Report' : 'Application' }}:
+                          {{ entitiesMap.appsMap[input.subValue]?.name }}
+                        </p>
+                      </ng-container>
+                      <ng-container *ngSwitchDefault>
+                        <p>{{ input.value || '-' }}</p>
+                      </ng-container>
+                    </ng-container>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </ngx-section>
+      </ng-container>
+
+      <ng-container *ngIf="task.outputs?.length > 0">
+        <ngx-section
+          [sectionTitle]="'Outputs (' + task.outputs.length + ')'"
+          appearance="outline"
+          [sectionCollapsed]="defaultCollapseState"
+        >
+          <div class="drawer-content__task__outputs">
+            <div class="drawer-content__task__outputs__item" *ngFor="let output of task.outputs">
+              <h3>
+                {{ OUTPUT_TYPES[output.type] }}
+              </h3>
+              <ul>
+                <ng-container [ngSwitch]="output.type">
+                  <ng-container *ngSwitchCase="'setFieldValue'">
+                    <li>
+                      <ng-container *ngTemplateOutlet="tmplAppOutputMapping"> </ng-container>
+                    </li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'insertUpdateRecord'">
+                    <ng-container *ngIf="entitiesMap.appsMap[output.applicationId]">
+                      <li>
+                        <ng-container *ngTemplateOutlet="tmplAppOutputMapping"> </ng-container>
+                      </li>
+                    </ng-container>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'referentialTask'">
+                    <li>
+                      <span>Task Name:</span>
+                      <span class="tag">{{ (selectTask(output.taskId) | async)?.name }}</span>
+                    </li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'email'">
+                    <li
+                      class="drawer-content__task__outputs__item__mapping--email"
+                      *ngFor="let mapping of output.mappings"
+                    >
+                      <div>{{ mapping.value | titlecase }}</div>
+                      <div>
+                        <span>Parameter Type:</span>
+                        <span class="tag">{{ mapping.type | titlecase }}</span>
+                      </div>
+                      <div>
+                        <span>Value:</span>
+                        <span>{{ mapping.key || '-' }}</span>
+                      </div>
+                      <div *ngIf="mapping.parserType">
+                        <span>Parser:</span>
+                        <span>{{ mapping.parserType }}</span>
+                      </div>
+                    </li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'saveToFile'">
+                    <span>File Name:</span>
+                    <span class="tag">{{ output.filename }}</span>
+                  </ng-container>
+
+                  <ng-container *ngSwitchDefault></ng-container>
+                </ng-container>
+              </ul>
+
+              <ng-template #tmplAppOutputMapping>
+                <p *ngIf="entitiesMap.appsMap[output.applicationId || task.applicationId]">
+                  <b>Application:</b> {{ entitiesMap.appsMap[output.applicationId || task.applicationId].name }}
+                </p>
+                <table class="table striped">
+                  <thead>
+                    <th>Parameter</th>
+                    <th></th>
+                    <th>Field Name</th>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let mapping of output.mappings">
+                      <td>
+                        <span>{{ mapping.key }}</span>
+                      </td>
+                      <td>
+                        <i class="ngx-icon ngx-trend-level"></i>
+                      </td>
+                      <td>
+                        <span>{{ (selectField(mapping.value) | async)?.name }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </ng-template>
+            </div>
+          </div>
+        </ngx-section>
+      </ng-container>
+
+      <ng-container *ngIf="task.triggers?.length > 0">
+        <ngx-section
+          [sectionTitle]="'Triggers (' + task.triggers.length + ')'"
+          appearance="outline"
+          [sectionCollapsed]="defaultCollapseState"
+        >
+          <div class="drawer-content__task__triggers">
+            <div class="drawer-content__task__triggers__item" *ngFor="let trigger of task.triggers">
+              <h3>
+                {{ TRIGGER_TYPES[trigger.type] }}
+              </h3>
+
+              <ul>
+                <ng-container [ngSwitch]="trigger.type">
+                  <ng-container *ngSwitchCase="'recordSave'">
+                    <li>Initial Save Only: {{ trigger.initialSaveOnly }}</li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'scheduled'">
+                    <li>
+                      Triggered: <span class="tag">{{ trigger.cron }}</span>
+                    </li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'email'">
+                    <li>Email Asset: {{ entitiesMap.assetsMap[trigger.assetId]?.name }}</li>
+                  </ng-container>
+
+                  <ng-container *ngSwitchDefault></ng-container>
+                </ng-container>
+              </ul>
+            </div>
+          </div>
+        </ngx-section>
+      </ng-container>
+    </div>
+  </section>
+</div>
+
+<ng-template #tmplScript>
+  <div class="drawer-content__script">
+    <ngx-codemirror
+      class="drawer-content__script__codemirror"
+      [ngModel]="context.script"
+      [config]="codeOptions"
+      [readOnly]="true"
+    >
+    </ngx-codemirror>
+  </div>
+</ng-template>
+
+<ng-template #tmplMissingApp>
+  <p><em>Application not found in given SSP</em></p>
+</ng-template>

@@ -1,0 +1,25 @@
+@import '@swimlane/ngx-ui/lib/styles/colors';
+
+.plugin-summary {
+  &__list-plugins {
+    display: flex;
+    flex-direction: column;
+
+    &__items {
+      margin-left: 2rem;
+      display: flex;
+      gap: 2rem;
+
+      &__tasks {
+        border-right: 1px solid $color-blue-grey-700;
+      }
+
+      &__tasks,
+      &__assets {
+        flex: 1;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+    }
+  }
+}

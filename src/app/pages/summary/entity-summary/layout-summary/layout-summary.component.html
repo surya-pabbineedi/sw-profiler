@@ -1,0 +1,22 @@
+<div class="layout-summary" *ngIf="context.item as item">
+  <ngx-toolbar [mainTitle]="context.title" [subtitle]="item.description">
+    <ngx-toolbar-content>
+      <span class="tag layout-type" *ngIf="context.item?.layoutType">{{ item.layoutType | titlecase }}</span>
+      <ngx-button class="btn btn-link dialog-close" (click)="context.close()">
+        <ngx-icon fontIcon="x"></ngx-icon>
+      </ngx-button>
+    </ngx-toolbar-content>
+  </ngx-toolbar>
+
+  <section class="drawer-content">
+    <div class="drawer-content__script">
+      <ngx-codemirror
+        class="drawer-content__script__codemirror"
+        [ngModel]="item.html || item.code"
+        [config]="codeOptions"
+        [readOnly]="true"
+      >
+      </ngx-codemirror>
+    </div>
+  </section>
+</div>
