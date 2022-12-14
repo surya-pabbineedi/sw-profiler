@@ -25,7 +25,7 @@
                       </a>
                     </td>
                     <td>
-                      {{ task.action?.descriptor?.name }}
+                      <b>{{ task.action?.descriptor?.name }}</b>
                     </td>
                     <td>
                       {{ (selectAsset(task.action?.assetId) | async)?.name || '-' }}
@@ -36,7 +36,7 @@
             </div>
 
             <div class="plugin-summary__list-plugins__items__assets">
-              <h3>Assets</h3>
+              <h3>Assets Configured</h3>
               <ul *ngIf="packageAssetsMap[packageInfo.Name] as packageAsset; else tmplNoAssetsForPlugin">
                 <li *ngFor="let asset of packageAsset">
                   {{ asset.name }}
@@ -47,6 +47,36 @@
         </ngx-section>
       </ng-container>
     </ng-container>
+
+    <ngx-section [sectionTitle]="'Others'" appearance="light" *ngIf="nonPackagedTasks?.length > 0">
+      <div class="plugin-summary__list-plugins__items">
+        <div class="plugin-summary__list-plugins__items__tasks">
+          <table class="table striped">
+            <thead>
+              <th>Task Name</th>
+              <th>Forked from package</th>
+              <th>Asset</th>
+            </thead>
+            <tbody>
+              <tr *ngFor="let task of nonPackagedTasks">
+                <td>
+                  <a href="javascript:void(0)" (click)="handleTaskClick(task)">
+                    {{ task.name }}
+                  </a>
+                </td>
+
+                <td>
+                  {{ task.action?.forkedFromPackage }}
+                </td>
+                <td>
+                  {{ (selectAsset(task.action?.assetId) | async)?.name || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </ngx-section>
   </div>
 </div>
 

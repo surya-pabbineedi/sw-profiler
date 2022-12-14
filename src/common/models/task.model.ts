@@ -1,4 +1,4 @@
-import { OutputType } from "../enums/task-output-type.enum";
+import { OutputType } from '../enums/task-output-type.enum';
 
 export interface OutputVariable {
   name: string;
@@ -25,6 +25,7 @@ export interface Descriptor {
   id: string;
   name: string;
   disabled: boolean;
+  packageDescriptor?: any;
 }
 
 export interface Action {

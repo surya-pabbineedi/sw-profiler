@@ -22,6 +22,23 @@ import { Router } from '@angular/router';
         flex-direction: column;
         place-content: center;
 
+        div.text {
+          display: flex;
+          flex-direction: column;
+          place-content: center;
+          align-items: center;
+
+          p {
+            font-size: 1.5rem;
+            color: $color-blue-grey-300;
+            font-style: normal;
+            font-weight: 300;
+
+            width: 50%;
+            text-align: center;
+          }
+        }
+
         .btn {
           width: 200px;
         }
@@ -33,7 +50,7 @@ import { Router } from '@angular/router';
     `
   ],
   template: `
-    <div class="entries-container">
+    <div class="entries-container ">
       <ng-container *ngIf="!loading; else tmplLoading">
         <ng-container *ngIf="!sspEntities; else tmplEntries">
           <ngx-dropzone
@@ -43,6 +60,13 @@ import { Router } from '@angular/router';
             (afterAddingFile)="onFileDrop($event)"
           >
           </ngx-dropzone>
+
+          <div class="text">
+            <p>
+              Import an SSP to comprehend the state of the entities in a Swimlane 10 environment and how they operate
+              through a created map and report.
+            </p>
+          </div>
         </ng-container>
       </ng-container>
 

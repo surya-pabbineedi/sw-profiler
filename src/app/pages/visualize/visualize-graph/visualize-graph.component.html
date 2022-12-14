@@ -389,6 +389,10 @@
       {{ node.label }}
     </svg:text>
 
+    <ng-container *ngIf="node.meta.allowViewInfo">
+      <ng-container *ngTemplateOutlet="tmplViewInfo; context: { node }"></ng-container>
+    </ng-container>
+
     <svg:g
       class="expand-collapse"
       *ngIf="node.meta.allowExpandCollpase"

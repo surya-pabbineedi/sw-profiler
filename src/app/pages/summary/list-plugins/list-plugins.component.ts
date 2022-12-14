@@ -6,6 +6,7 @@ import { ProfilerStore } from 'src/common/store/profiler.store';
 import { tap } from 'rxjs';
 import { TaskSummaryComponent } from '../entity-summary/task-summary/task-summary.component';
 import { NavigationStore } from 'src/common/store/navigation.store';
+import { Task } from 'src/common/models/task.model';
 
 @Component({
   selector: 'app-list-plugins',
@@ -21,7 +22,8 @@ export class ListPluginsComponent {
 
   packageDescriptorMap: { [key: string]: any } = {};
 
-  packagedTasksMap: any = {};
+  packagedTasksMap: { [key: string]: Task[] } = {};
+  nonPackagedTasks: Task[] = [];
   packages: string[] = [];
 
   packageAssetsMap: any = {};
@@ -34,16 +36,7 @@ export class ListPluginsComponent {
     tap(({ assets, tasks, packageDescriptor }) => {
       this.packageDescriptorMap = Object.fromEntries(packageDescriptor?.map(item => [item.Id, item]) || []);
 
-      this.packagedTasksMap = tasks
-        .filter(task => task.action?.type === 'packaged')
-        .reduce((acc, task) => {
-          acc[task.action?.descriptor?.packageDescriptor?.id] = [
-            ...(acc?.[task.action?.descriptor?.packageDescriptor?.id] || []),
-            task
-          ];
-
-          return acc;
-        }, {});
+      this.packagedTasksMap = tasks.filter(task => task.action?.type === 'packaged').reduce(this.reduceTasksFn, {});
 
       this.packageAssetsMap = assets
         .filter(asset => asset.descriptor)
@@ -56,6 +49,7 @@ export class ListPluginsComponent {
           return acc;
         }, {});
 
+      this.nonPackagedTasks = tasks.filter(task => task.action?.type !== 'packaged' && task.action.assetId);
       this.packages = Object.keys(this.packagedTasksMap);
     })
   );
@@ -68,4 +62,13 @@ export class ListPluginsComponent {
       template: this.tmplTaskSummary
     });
   }
+
+  reduceTasksFn = (acc: any, task: Task) => {
+    acc[task.action?.descriptor?.packageDescriptor?.id] = [
+      ...(acc?.[task.action?.descriptor?.packageDescriptor?.id] || []),
+      task
+    ];
+
+    return acc;
+  };
 }

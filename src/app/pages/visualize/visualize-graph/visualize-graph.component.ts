@@ -28,6 +28,7 @@ import { WorkspaceSummaryComponent } from '../../summary/entity-summary/workspac
 import { NavigationStore } from 'src/common/store/navigation.store';
 import { Task } from 'src/common/models/task.model';
 import groupBy from 'lodash-es/groupBy';
+import { uniq } from 'lodash-es';
 
 @Component({
   standalone: true,
@@ -147,11 +148,23 @@ export class VisualizeGraphComponent {
 
   toggleNodeExpand(incomingEvent: Event, incomingNode: Node) {
     incomingNode.meta.expanded = !incomingNode.meta.expanded;
+
+    if (incomingNode.meta.nodeType === NodeType.ReportGroup) {
+      const reports: Report[] = incomingNode.meta?.data?.reports;
+      reports.forEach(report => {
+        const groupIds = (report.applicationIds || []).map(appId => `${appId}-application-rg`);
+        this.nodesMap[report.id].meta.connectionNodeIds = uniq([
+          ...this.nodesMap[report.id]?.meta.connectionNodeIds,
+          ...[incomingNode.meta.expanded ? groupIds : []]
+        ]);
+      });
+    }
+
     this.drawGraph();
+    this.update$.next(true);
 
     setTimeout(() => {
       this.panToNode$.next(this.selectedNode?.id);
-      this.update$.next(false);
     }, 100);
   }
 
@@ -170,6 +183,13 @@ export class VisualizeGraphComponent {
         this.navStore.showWorkspaceSummary$({
           workspaceId: incomingNode.meta.data.id,
           template: this.tmplWorkspaceSummary
+        });
+        break;
+
+      case NodeType.ReportGroup:
+        this.navStore.showAppSummary$({
+          appId: incomingNode.meta.data.parent.id,
+          template: this.tmplAppSummary
         });
         break;
 

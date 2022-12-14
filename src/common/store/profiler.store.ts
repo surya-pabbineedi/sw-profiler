@@ -127,7 +127,7 @@ export class ProfilerStore extends ComponentStore<ProfilerState> {
 
   readonly selectAsset = (assetId: string) =>
     this.select(({ assets }) => {
-      return assets.find(asset => asset.id === assetId);
+      return assetId ? assets.find(asset => asset.id === assetId) : undefined;
     });
 
   readonly selectEntityMaps$ = this.select(

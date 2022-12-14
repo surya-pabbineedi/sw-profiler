@@ -6,7 +6,6 @@
     flex-direction: column;
 
     &__items {
-      margin-left: 2rem;
       display: flex;
       gap: 2rem;
 
@@ -17,7 +16,7 @@
       &__tasks,
       &__assets {
         flex: 1;
-        max-height: 200px;
+        max-height: 300px;
         overflow-y: auto;
       }
     }

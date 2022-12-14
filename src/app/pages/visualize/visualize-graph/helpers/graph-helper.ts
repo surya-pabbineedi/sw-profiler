@@ -424,15 +424,13 @@ export class GraphHelper {
 
   static addReports(nodes: NodeMap, reports: Report[], apps: App[], dashboards: Dashboard[]) {
     // separate dashboard reports
-    const dashboardReportIds = dashboards
-      .flatMap(d => d.items)
-      .filter((entry: { cardType: string }) => entry.cardType.toLowerCase() === DashboardCardTypes.Report.toLowerCase())
-      .map(entry => (entry as ReportCard).reportId);
+    // const dashboardReportIds = dashboards
+    //   .flatMap(d => d.items)
+    //   .filter((entry: { cardType: string }) => entry.cardType.toLowerCase() === DashboardCardTypes.Report.toLowerCase())
+    //   .map(entry => (entry as ReportCard).reportId);
 
     apps.forEach(app => {
-      const appReports = reports.filter(
-        report => report.applicationIds?.includes(app.id) && !dashboardReportIds.includes(report.id)
-      );
+      const appReports = reports.filter(report => report.applicationIds?.includes(app.id)); // && !dashboardReportIds.includes(report.id)
 
       if (appReports?.length > 0) {
         this.addReportGroupNode(nodes, appReports, reports, app, NodeType.Application);
@@ -529,57 +527,65 @@ export class GraphHelper {
   }
 
   private static addReportGroupNode(
-    nodes: any,
+    nodes: NodeMap,
     itemsToAdd: any[],
     reports: Report[],
-    parent: any,
+    parent: App | Dashboard,
     parentType: NodeType
   ) {
-    const reportGroupId = itemsToAdd.length > 0 ? `${parent.id}-${parentType}-rg` : parent.id;
-    if (itemsToAdd.length > 0) {
-      const label = `${itemsToAdd.length} Reports`;
-      nodes[reportGroupId] = {
-        id: reportGroupId,
-        dimension: COMPACT_NODE_DIMENSION,
-        meta: {
-          nodeType: NodeType.ReportGroup,
-          name: label,
-          data: { count: itemsToAdd.length },
-          allowExpandCollpase: true,
-          expanded: false,
-          connectionNodeIds: [parent.id] || []
+    const reportGroupId = `${parent.id}-${parentType}-rg`;
+    const label = `${itemsToAdd.length} Reports`;
+    nodes[reportGroupId] = {
+      id: reportGroupId,
+      dimension: COMPACT_NODE_DIMENSION,
+      meta: {
+        nodeType: NodeType.ReportGroup,
+        name: label,
+        data: {
+          parent,
+          reports: itemsToAdd.map(entry =>
+            reports.find(report => report.id === (parentType === NodeType.Dashboard ? entry.reportId : entry.id))
+          ),
+          count: itemsToAdd.length
         },
-        label
-      };
-    }
+        allowViewInfo: parentType === NodeType.Application,
+        allowExpandCollpase: parentType === NodeType.Dashboard,
+        expanded: parentType === NodeType.Application,
+        connectionNodeIds: [parent.id]
+      },
+      label
+    };
 
-    itemsToAdd.forEach((entry: any) => {
-      const reportId = parentType === NodeType.Dashboard ? entry.reportId : entry.id;
-      const report = reports.find(report => report.id === reportId);
-      if (report) {
-        // if there is already a report added as part of app then link the nodes
-        const nodeReportId = `${reportId}-report`;
-        if (nodes[nodeReportId]?.meta?.connectionNodeIds?.length > 0) {
-          nodes[nodeReportId].meta.connectionNodeIds = [...nodes[nodeReportId].meta.connectionNodeIds, reportGroupId];
-        } else {
-          const reportNode: Node = {
-            id: `${entry.id}-report`,
-            dimension: NODE_DIMENSION,
-            meta: {
-              nodeType: NodeType.Report,
-              name: entry.name,
-              data: { parent: entry, report },
-              expanded: true,
-              allowViewInfo: true,
-              connectionNodeIds: [reportGroupId] || []
-            },
-            label: parentType === NodeType.Dashboard ? `${entry.name} - ${report.name}` : report.name
-          };
+    // allow adding report nodes for only dashboards
+    if (parentType === NodeType.Dashboard) {
+      itemsToAdd.forEach((entry: any) => {
+        const reportId = parentType === NodeType.Dashboard ? entry.reportId : entry.id;
+        const report = reports.find(report => report.id === reportId);
+        if (report) {
+          // if there is already a report added as part of app then link the nodes
+          const nodeReportId = reportId;
+          if (nodes[nodeReportId]?.meta?.connectionNodeIds?.length > 0) {
+            nodes[nodeReportId].meta.connectionNodeIds = [...nodes[nodeReportId].meta.connectionNodeIds, reportGroupId];
+          } else {
+            const reportNode: Node = {
+              id: nodeReportId,
+              dimension: NODE_DIMENSION,
+              meta: {
+                nodeType: NodeType.Report,
+                name: entry.name,
+                data: { parent: entry, report },
+                expanded: true,
+                allowViewInfo: true,
+                connectionNodeIds: [reportGroupId]
+              },
+              label: parentType === NodeType.Dashboard ? `${entry.name} - ${report.name}` : report.name
+            };
 
-          nodes[reportNode.id] = reportNode;
+            nodes[reportNode.id] = reportNode;
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   private static getIntegrationAtttributes(integration: any) {
