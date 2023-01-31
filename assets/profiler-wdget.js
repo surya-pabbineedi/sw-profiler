@@ -6,6 +6,18 @@ export default class extends SwimlaneElement {
       super.styles,
       css`
         .help-text {
+          color: #647493;
+          font-size: 1rem;
+        }
+
+        .secondary-text {
+          color: #5a6884;
+          font-size: 0.8rem;
+        }
+
+        .error-text {
+          color: #ad2400;
+          font-size: 1rem;
         }
 
         .profiler {
@@ -58,7 +70,8 @@ export default class extends SwimlaneElement {
     apps: { type: Array },
     profilerApp: { type: Object },
     actionLabel: { type: String },
-    actionDisabled: { type: Boolean }
+    actionDisabled: { type: Boolean },
+    hasExportErrors: { type: Boolean }
   };
 
   constructor() {
@@ -67,6 +80,7 @@ export default class extends SwimlaneElement {
     this.apps = [];
     this.selectedApps = [];
     this.actionDisabled = false;
+    this.hasExportErrors = false;
   }
 
   get headers() {
@@ -90,6 +104,17 @@ export default class extends SwimlaneElement {
     }).then(appResponse => appResponse.json());
   }
 
+  tryExport(app) {
+    return fetch(`${this.contextData.origin}/api/content/export/try`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({
+        entryPointIds: [app.id],
+        entryPointType: 'application'
+      })
+    }).then(appResponse => appResponse.json());
+  }
+
   exportAppRequest(app) {
     const fileName = app.name.replace(/[|&;$%@"<>()+,]/g, '');
     const exportDownloadRequest = {
@@ -105,8 +130,6 @@ export default class extends SwimlaneElement {
     })
       .then(appResponse => appResponse.blob())
       .then(sspResponse => {
-        console.log(`Success!`);
-
         const blobUrl = URL.createObjectURL(sspResponse);
         const link = document.createElement('a');
         link.href = blobUrl;
@@ -124,9 +147,19 @@ export default class extends SwimlaneElement {
   }
 
   download(profilerApp) {
-    this.actionLabel = 'Downloading SSP...';
+    this.actionLabel = 'Validating...';
     this.putAppRequest(profilerApp).then(() => {
-      this.exportAppRequest(profilerApp);
+      this.tryExport(profilerApp).then(tryResponse => {
+        const errors = Object.keys(tryResponse.errors || {}).filter(k => !k.startsWith('$type'));
+        if (errors.length > 0) {
+          this.hasExportErrors = true;
+          this.actionLabel = 'Failed!';
+          return;
+        }
+
+        this.actionLabel = 'Downloading SSP...';
+        this.exportAppRequest(profilerApp);
+      });
     });
   }
 
@@ -169,8 +202,6 @@ export default class extends SwimlaneElement {
 
     const profilerApp = this.profilerApp;
 
-    console.log({ apps: this.apps, profilerApp });
-
     // might be there are no references to add
     if (this.apps.length === 0) {
       this.download(profilerApp);
@@ -180,10 +211,6 @@ export default class extends SwimlaneElement {
     const appsToAdd = this.apps.filter(
       app => app.selectedForExport && profilerApp.fields.every(field => field.targetId !== app.id)
     );
-
-    console.log({ appsToAdd });
-
-    return;
 
     this.actionLabel = 'Adding References...';
     const refFields = appsToAdd.map(app => {
@@ -235,14 +262,6 @@ export default class extends SwimlaneElement {
 
     const length = this.apps.filter(a => a.selectedForExport).length;
     this.actionLabel = `Give me SSP for the selected(${length}) apps`;
-    console.log(
-      { apps: this.apps },
-      {
-        value: incomingEvent.target.value,
-        app: this.apps.find(a => a.id === incomingEvent.target.value)
-      },
-      incomingEvent.target.checked
-    );
 
     this.actionDisabled = length === 0;
   }
@@ -255,35 +274,47 @@ export default class extends SwimlaneElement {
           doesn't work, check the reference fields of the "Profiler" app and use the "Export" option to export it
           manually.
         </p>
+        <p>
+          <em class="secondary-text"
+            >Note: Some applications may still be included in the SSP since they may be referenced by the chosen
+            applications.</em
+          >
+        </p>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          .disabled=${this.actionDisabled}
-          @click="${this.handleAddRefsClick}"
-        >
-          ${this.actionLabel}
-        </button>
+        ${this.hasExportErrors
+          ? html`<p class="error-text">
+              Unable to export the SSP! Please attempt a manual export of the 'profiler' application in order to view
+              the problems.
+            </p>`
+          : html` <button
+                type="button"
+                class="btn btn-primary"
+                .disabled=${this.actionDisabled}
+                @click="${this.handleAddRefsClick}"
+              >
+                ${this.actionLabel}
+              </button>
 
-        <ul class="app-selection">
-          ${this.apps.map(
-            app => html`
-              <li>
-                <input
-                  type="checkbox"
-                  id="${app.id}"
-                  name="${app.name}"
-                  value=${app.id}
-                  .checked=${app.selectedForExport}
-                  .disabled=${app.alreadyReferenced}
-                  @click=${this.handleAppSelection}
-                />
-                <label for="${app.id}">${app.name}</label>
-              </li>
-            `
-          )}
-        </ul>
+              <ul class="app-selection">
+                ${this.apps.map(
+                  app => html`
+                    <li>
+                      <input
+                        type="checkbox"
+                        id="${app.id}"
+                        name="${app.name}"
+                        value=${app.id}
+                        .checked=${app.selectedForExport}
+                        .disabled=${app.alreadyReferenced}
+                        @click=${this.handleAppSelection}
+                      />
+                      <label for="${app.id}">${app.name}</label>
+                    </li>
+                  `
+                )}
+              </ul>`}
 
+        <!-- this is required -->
         <div id="download-link-container"></div>
       </div>
     `;
