@@ -346,7 +346,6 @@ export default class extends SwimlaneElement {
           console.log({ error });
         })
         .then(tryResponse => {
-          console.log({ tryResponse });
           const errors = Object.keys(tryResponse.errors || {}).filter(k => !k.startsWith('$type'));
           if (errors.length > 0 || tryResponse.ErrorCode) {
             this.actionFailed();
