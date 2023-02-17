@@ -233,17 +233,9 @@ export default class extends SwimlaneElement {
     profilerApp: { type: Object },
     actionLabel: { type: String },
     actionDisabled: { type: Boolean },
-    hasExportErrors: { type: Boolean }
+    hasExportErrors: { type: Boolean },
+    apiVersion: { type: String }
   };
-
-  constructor() {
-    super();
-    this.actionLabel = 'Get apps for the Profiler';
-    this.apps = [];
-    this.selectedApps = [];
-    this.actionDisabled = false;
-    this.hasExportErrors = false;
-  }
 
   get headers() {
     return {
@@ -254,6 +246,38 @@ export default class extends SwimlaneElement {
 
   get swimlaneLoader() {
     return this.renderRoot.querySelector('#swimlane-loader');
+  }
+
+  get is10_7() {
+    return this.apiVersion.startsWith('10.7');
+  }
+
+  constructor() {
+    super();
+
+    this.actionLabel = 'Get apps for the Profiler';
+    this.apps = [];
+    this.selectedApps = [];
+    this.actionDisabled = false;
+    this.hasExportErrors = false;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    setTimeout(() => {
+      this.getSettings();
+    }, 1000);
+  }
+
+  getSettings() {
+    return fetch(`${this.contextData.origin}/api/settings`, {
+      headers: this.headers
+    })
+      .then(appResponse => appResponse.json())
+      .then(settings => {
+        this.apiVersion = settings.apiVersion || '';
+      });
   }
 
   getAppsRequest() {
@@ -274,20 +298,26 @@ export default class extends SwimlaneElement {
     return fetch(`${this.contextData.origin}/api/content/export/try`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify({
-        entryPointIds: [app.id],
-        entryPointType: 'application'
-      })
+      body: JSON.stringify(
+        this.is10_7
+          ? { applicationIds: [app.id] }
+          : {
+              entryPointIds: [app.id],
+              entryPointType: 'application'
+            }
+      )
     }).then(appResponse => appResponse.json());
   }
 
   exportAppRequest(app) {
-    const fileName = app.name.replace(/[|&;$%@"<>()+,]/g, '');
-    const exportDownloadRequest = {
-      entryPointIds: [app.id],
-      entryPointType: 'application',
-      exportName: fileName
-    };
+    const exportName = app.name.replace(/[|&;$%@"<>()+,]/g, '');
+    const exportDownloadRequest = this.is10_7
+      ? { applicationIds: [app.id], exportName }
+      : {
+          entryPointIds: [app.id],
+          entryPointType: 'application',
+          exportName
+        };
 
     return fetch(`${this.contextData.origin}/api/content/export/download`, {
       method: 'POST',
@@ -314,7 +344,7 @@ export default class extends SwimlaneElement {
             const blobUrl = URL.createObjectURL(sspResponse);
             const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = `${window.location.host}-${fileName}.ssp`;
+            link.download = `${window.location.host}-${exportName}.ssp`;
             link.innerHTML = 'Click here to download the SSP';
             link.style.display = 'none';
 
